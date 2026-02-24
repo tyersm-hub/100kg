@@ -1129,10 +1129,11 @@
         const dayOrder = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
 
         const defaultHabits = [
-            "Take vitamins",
-            "Take creatine",
-            "Drink 3L water",
-            "8 hours sleep"
+            { name: "Take vitamins", days: [] },
+            { name: "Take creatine", days: [] },
+            { name: "Drink 3L water", days: [] },
+            { name: "8 hours sleep", days: [] },
+            { name: "STAB", days: ["tue"] }
         ];
 
         let currentWeek = 1;
@@ -1672,14 +1673,26 @@
             const key = getDateKey(habitDate);
             const dayHabits = data.habitLog[key] || {};
 
+            // Get day of week for filtering (sun, mon, tue, etc.)
+            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const currentDayOfWeek = days[habitDate.getDay()];
+
             const container = document.getElementById('habitsList');
             container.innerHTML = data.habits.map((habit, i) => {
+                // Handle both old string format and new object format
+                const habitName = typeof habit === 'string' ? habit : habit.name;
+                const habitDays = typeof habit === 'string' ? [] : (habit.days || []);
+
+                // Show if: no days specified (daily) OR current day is in the days array
+                const shouldShow = habitDays.length === 0 || habitDays.includes(currentDayOfWeek);
+                if (!shouldShow) return '';
+
                 const completed = dayHabits[i] || false;
                 const streak = getHabitStreak(i);
                 return `
                     <div class="habit-item">
                         <div class="habit-checkbox ${completed ? 'checked' : ''}" onclick="toggleHabit(${i})"></div>
-                        <span class="habit-name ${completed ? 'completed' : ''}">${habit}</span>
+                        <span class="habit-name ${completed ? 'completed' : ''}">${habitName}</span>
                         ${streak > 1 ? `<span class="habit-streak">${streak} days</span>` : ''}
                         <button class="delete-btn" onclick="deleteHabit(${i})">×</button>
                     </div>
@@ -1718,12 +1731,12 @@
 
         function addHabit() {
             const input = document.getElementById('newHabitInput');
-            const habit = input.value.trim();
-            if (!habit) return;
+            const habitName = input.value.trim();
+            if (!habitName) return;
 
             const data = getData();
             if (!data.habits) data.habits = [];
-            data.habits.push(habit);
+            data.habits.push({ name: habitName, days: [] }); // Empty days = show every day
             saveData(data);
 
             input.value = '';
@@ -1827,17 +1840,24 @@
             // Habit stats (for selected week)
             let habitDays = 0;
             let perfectDays = 0;
-            const numHabits = data.habits?.length || 4;
+            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
             for (let i = 0; i < 7; i++) {
                 const checkDate = new Date(weekStartDate);
                 checkDate.setDate(weekStartDate.getDate() + i);
                 const key = getDateKey(checkDate);
+                const dayOfWeek = days[checkDate.getDay()];
+
+                // Count habits that should show on this specific day
+                const habitsForDay = (data.habits || []).filter(h => {
+                    const habitDays = typeof h === 'string' ? [] : (h.days || []);
+                    return habitDays.length === 0 || habitDays.includes(dayOfWeek);
+                }).length;
 
                 if (data.habitLog[key]) {
                     const completed = Object.values(data.habitLog[key]).filter(v => v).length;
                     if (completed > 0) habitDays++;
-                    if (completed >= numHabits) perfectDays++;
+                    if (completed >= habitsForDay) perfectDays++;
                 }
             }
 
@@ -1952,16 +1972,23 @@
 
             // Check habits (for selected week)
             let perfectDays = 0;
-            const numHabits = data.habits?.length || 4;
+            const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 
             for (let i = 0; i < 7; i++) {
                 const checkDate = new Date(weekStartDate);
                 checkDate.setDate(weekStartDate.getDate() + i);
                 const key = getDateKey(checkDate);
+                const dayOfWeek = days[checkDate.getDay()];
+
+                // Count habits that should show on this specific day
+                const habitsForDay = (data.habits || []).filter(h => {
+                    const habitDays = typeof h === 'string' ? [] : (h.days || []);
+                    return habitDays.length === 0 || habitDays.includes(dayOfWeek);
+                }).length;
 
                 if (data.habitLog[key]) {
                     const completed = Object.values(data.habitLog[key]).filter(v => v).length;
-                    if (completed >= numHabits) perfectDays++;
+                    if (completed >= habitsForDay) perfectDays++;
                 }
             }
 
