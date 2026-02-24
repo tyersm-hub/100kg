@@ -1670,6 +1670,27 @@
                 saveData(data);
             }
 
+            // Migrate old string format to new object format and ensure STAB exists
+            let needsMigration = false;
+            data.habits = data.habits.map(habit => {
+                if (typeof habit === 'string') {
+                    needsMigration = true;
+                    return { name: habit, days: [] };
+                }
+                return habit;
+            });
+
+            // Check if STAB exists, if not add it
+            const hasStab = data.habits.some(h => h.name === "STAB");
+            if (!hasStab) {
+                data.habits.push({ name: "STAB", days: ["tue"] });
+                needsMigration = true;
+            }
+
+            if (needsMigration) {
+                saveData(data);
+            }
+
             const key = getDateKey(habitDate);
             const dayHabits = data.habitLog[key] || {};
 
