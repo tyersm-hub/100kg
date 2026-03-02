@@ -1215,17 +1215,42 @@
             const data = getData();
             if (!data.weeks[week]) {
                 data.weeks[week] = {};
+
+                // Check if there's a previous week to copy weights from
+                const previousWeek = week - 1;
+                const hasPreviousWeek = previousWeek >= 1 && data.weeks[previousWeek];
+
                 dayOrder.forEach(day => {
                     const dayInfo = weekDays[day];
-                    data.weeks[week][day] = {
-                        completed: false,
-                        exercises: dayInfo.exercises.map(e => ({
+                    const exercises = dayInfo.exercises.map(e => {
+                        let weight = '';
+
+                        // Try to find this exercise in the previous week and copy weight
+                        if (hasPreviousWeek && data.weeks[previousWeek][day]) {
+                            const prevExercise = data.weeks[previousWeek][day].exercises.find(
+                                ex => ex.name === e.name
+                            );
+                            if (prevExercise && prevExercise.weight) {
+                                // Copy weight forward with a small 2.5kg increase
+                                const prevWeight = parseFloat(prevExercise.weight);
+                                if (!isNaN(prevWeight)) {
+                                    weight = (prevWeight + 2.5).toString();
+                                }
+                            }
+                        }
+
+                        return {
                             name: e.name,
                             sets: e.sets,
                             completed: false,
-                            weight: '',
+                            weight: weight,
                             isCustom: false
-                        })),
+                        };
+                    });
+
+                    data.weeks[week][day] = {
+                        completed: false,
+                        exercises: exercises,
                         customExercises: []
                     };
                 });
