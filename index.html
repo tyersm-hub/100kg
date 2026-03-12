@@ -2082,6 +2082,11 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            // Set to current week by default
+            currentWeek = getCurrentWeekNumber();
+            reviewWeek = getCurrentWeekNumber();
+            document.getElementById('weekLabel').textContent = `Week ${currentWeek}`;
+
             renderDayCards();
             renderBodyweightLog();
 
